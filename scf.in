@@ -1,25 +1,28 @@
 &CONTROL
 calculation='scf',
 restart_mode='from_scratch',
+pseudo_dir='../../',
 outdir='.',
 /
 &SYSTEM
 ntyp=1,
 nat=2,
 ibrav=0,
-ecutwfc=20,
-ecutrho=200,
+ecutwfc=32,
+ecutrho=320,
 occupations='smearing',
 degauss=0.02,
 /
+&ELECTRONS
+/
 CELL_PARAMETERS (angstrom)
-3 0 0
-0 3 0
-0 0 3
+3.51 0 0
+0 3.51 0
+0 0 3.51
 ATOMIC_SPECIES
-Li li_usp.UPF
+Li 7.0 li_usp.UPF
 ATOMIC_POSITIONS (crystal)
 Li 0 0 0
 Li 0.5 0.5 0.5
 K_POINTS automatic
-6 6 6 0 0 0
+8 8 8 0 0 0

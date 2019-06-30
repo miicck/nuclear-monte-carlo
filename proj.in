@@ -1,8 +1,5 @@
 &projwfc
 outdir='./'
-prefix='La'
-ngauss=-1,
 degauss=0.02,
 DeltaE=0.01,
-filpdos='electron.dos'
 /
