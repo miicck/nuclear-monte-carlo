@@ -118,7 +118,7 @@ def create_input(weight, positions, to_copy="scf.in"):
 	direc = "samples/sample_"+str(direc_count)
 	os.system("mkdir samples 2>/dev/null")
 	os.system("mkdir "+direc)
-	os.system("cp proj.in "+direc)
+	os.system("cp dos.in "+direc)
 	os.system("echo "+str(weight)+" > "+direc+"/weight")
 
 	# Copy the scf input file there, modifying it
@@ -176,8 +176,11 @@ def guassian_spread(positions, init_positions, decay_length=0.1):
 
 # Don't overwrite previous run
 if os.path.isdir("samples"):
-	print "Error, refusing to overwirte samples directory."
-	quit()
+	if "-f" in sys.argv:
+		os.system("rm -r samples")
+	else:
+		print "Error, refusing to overwirte samples directory."
+		quit()
 
 # Check we've got the right number of arguments
 if len(sys.argv) < 2:
@@ -200,5 +203,5 @@ if plot:
 	# Plot the nuclear density
 	ax = plt.gcf().add_subplot(111, projection='3d')
 	ax.scatter(init_pos.T[0], init_pos.T[1], init_pos.T[2])
-	ax.scatter(path.T[0], path.T[1], path.T[2], alpha=0.1)
+	ax.scatter(path.T[0], path.T[1], path.T[2])
 	plt.show()

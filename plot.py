@@ -1,57 +1,101 @@
 #!/usr/bin/python
 import os
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-for d in os.listdir("samples"):
+# Return a weighted standard deviation
+def std(vals, ws):
+	av  = np.average(vals, weights=ws, axis=0)
+	var = np.average((vals-av)**2, weights=ws, axis=0)
+	return np.sqrt(var)
 
-	if not d.startswith("sample"): continue
-	d = "samples/"+d
-	if not os.path.isdir(d): continue
+directories = os.listdir("samples")
+directories = ["samples/"+d for d in directories]
+if len(sys.argv) > 1: directories = sys.argv[1:]
 
-	# Parse the electron PDOS
-	es = None
-	pdos = []
-	labels = []
-	sort_by = []
-	for f in os.listdir(d):
+weights  = []
+energies = []
+doss     = []
+max_min  = -np.inf
+min_max  = np.inf
+for d in directories:
 
-		if not f.startswith("pwscf.pdos"): continue
-		if not "atm#" in f: continue
-		if not "wfc#" in f: continue
+	if not os.path.isdir(d):
+		continue
 
-		# Get atom number and wfc number from filename
-		atm_num = int(f.split("#")[1].split("(")[0])
-		wfc_num = int(f.split("#")[2].split("(")[0])
+	f = d+"/weight"
+	if not os.path.isfile(f):
+		continue
 
-		# Read lines of file in
-		f = d+"/"+f
-		f = open(f)
-		lines = f.read().split("\n")
-		f.close()
+	# Parse the weight
+	f = open(f)
+	weight = float(f.read())
+	f.close()
 
-		# Parse E, ldos(?), pdos from each line
-		# (not including first and last line)
-		data = []
-		for l in lines[1:-1]: data.append([float(w) for w in l.split()])
-		data = np.array(data).T
-		es   = data[0]
-		pdos.append(data[2])
+	# Parse the electron DOS
+	# Read lines of file in
+	f = d+"/pwscf.dos"
+	if not os.path.isfile(f):
+		continue
 
-		# Label pdos by atom and wavefunction numbers
-		labels.append("Atom {0}, wfc {1}".format(atm_num, wfc_num))
+	f = open(f)
+	lines = f.read().split("\n")
+	f.close()
 
-		# Sort pdos by wfc number, then atom number
-		# (assumes < 1024 atoms)
-		sort_by.append(wfc_num*1024 + atm_num)
+	# Parse E, dos, Int pdos from each line
+	# (not including first and last line)
+	data = []
+	efermi = float(lines[0].split("=")[1].split("e")[0])
+	for l in lines[1:-1]: data.append([float(w) for w in l.split()])
+	data = np.array(data).T
+	es   = data[0] - efermi
+	dos  = data[1]
 
-	# Sort pdos's according to entries of sort_by
-	sort_by, pdos, labels = zip(*sorted(zip(sort_by, pdos, labels)))
+	# Find the range of es present in every DOS
+	if max(es) < min_max: min_max = max(es)
+	if min(es) > max_min: max_min = min(es)
+	
+	# Record the results
+	weights.append(weight)
+	energies.append(es)
+	doss.append(dos)
 
-	# Plot pdos
-	total = np.zeros(len(pdos[0]))
-	for p, l in zip(pdos, labels):
-		plt.fill_between(es, total, total+p, label=l)
-		total += p
-	plt.legend()
-	plt.show()
+# Align all the dos arrays
+count = -1
+for n_sample in range(0, len(weights)):
+
+	e = energies[n_sample]
+	dos = doss[n_sample]
+
+	# Get the indicies bounding our plotted range
+	for i in range(0, len(e)):
+		if e[i] < max_min:
+			i_min = i
+		if e[i] > min_max:
+			i_max = i
+			break
+
+	# Ensure the number of elements in each array is the same
+	if count < 0: count  = i_max - i_min
+	else: i_max += count - (i_max - i_min)
+
+	# Throw away data outside plotted range
+	energies[n_sample] = e[i_min:i_max]
+	doss[n_sample]     = dos[i_min:i_max]
+
+# Plot each DOS
+plt.subplot(211)
+for n_sample in range(0, len(weights)):
+	plt.plot(energies[n_sample], doss[n_sample])
+
+sum_weight = np.sum(weights)
+sum_dos = np.dot(weights, doss)/sum_weight
+sum_energies = np.dot(weights, energies)/sum_weight
+std_dos = std(doss, weights)
+
+# Plot the average dos and std deviation
+plt.subplot(212)
+plt.fill_between(sum_energies, sum_dos-std_dos, sum_dos+std_dos, alpha=0.5, color="black")
+plt.plot(sum_energies, sum_dos, color="black", linestyle=":")
+plt.show()

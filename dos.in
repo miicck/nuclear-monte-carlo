@@ -1,0 +1,4 @@
+&DOS
+degauss=0.02, ! Smearing in Ry
+DeltaE=0.001, ! Delta E in eV
+/

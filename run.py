@@ -13,5 +13,4 @@ for d in os.listdir("samples"):
 for i, d in enumerate(dirs):
 	print "Running {0} ({1}/{2})".format(d,i+1,len(dirs))
 	os.system("cd "+d+"; nice -15 mpirun pw.x <scf.in> scf.out")
-	os.system("cd "+d+"; nice -15 mpirun projwfc.x <proj.in> proj.out")
-
+	os.system("cd "+d+"; nice -15 mpirun dos.x <dos.in> dos.out")
