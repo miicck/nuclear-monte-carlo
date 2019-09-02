@@ -15,11 +15,13 @@ def nuclear_density(x):
 # Sample the function metro according to the metropolis algorithm
 #       x0       = start point
 # 	steps    = # of metropolis iterations
+#       samples  = # of samples to take from those metropolis steps
 #	metro    = function to sample
 # returns a pair [weights, path] where weights are the weights
 # corresponding to each sampled point in path.
 def generate_metro_path(x0, 
 			steps, 
+                        samples,
 			metro=nuclear_density):
 
 	# Start path at initial position x0 with weight 1.0
@@ -63,9 +65,17 @@ def generate_metro_path(x0,
 		step_size += 0.1*(acceptance_ratio-0.234)
 		if step_size < 0: step_size = 0
 
-	# Print info, return [weights, path]
+        # Resample to avoid serial correlation
+        new_weights = []
+        new_path    = []
+        for j in range(0, len(weights), int(len(weights)/samples)):
+            if len(new_weights) >= samples: break
+            new_weights.append(weights[j])
+            new_path.append(path[j])
+        
 	print "Acceptance ratio: ", acceptance_ratio*100, "% (optimal = 23.4%)"
-	return [np.array(weights), np.array(path)]
+        print "Requested samples: {0}, produced samples: {1}".format(samples, len(new_weights))
+	return [np.array(new_weights), np.array(new_path)]
 
 # Read the positions of the atoms in the q.e ".in" file
 def read_positions(filename="scf.in"):
@@ -196,7 +206,7 @@ except:
 
 init_pos = read_positions()
 guass_dist = lambda x : guassian_spread(x, init_pos)
-weights, path = generate_metro_path(init_pos, samples, metro=guass_dist)
+weights, path = generate_metro_path(init_pos, samples*10, samples, metro=guass_dist)
 for w, p in zip(weights, path): create_input(w, p)
 
 if plot:
